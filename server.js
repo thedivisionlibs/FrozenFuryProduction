@@ -242,7 +242,7 @@ app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
     if (req.path !== '/api/health') {
-      console.log(\`[\${new Date().toISOString()}] \${req.method} \${req.path} \${res.statusCode} \${Date.now() - start}ms\`);
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} ${res.statusCode} ${Date.now() - start}ms`);
     }
   });
   next();
@@ -361,7 +361,7 @@ app.post('/api/auth/register', async (req, res) => {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Valid email required' });
     if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
 
-    const existing = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username: { $regex: new RegExp(\`^\${username}$\`, 'i') } }] });
+    const existing = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username: { $regex: new RegExp(`^${username}$`, 'i') } }] });
     if (existing) return res.status(409).json({ error: existing.email === email.toLowerCase() ? 'Email already registered' : 'Username taken' });
 
     const user = new User({ username, email: email.toLowerCase(), password: await bcrypt.hash(password, 12), referralCode: generateReferralCode() });
@@ -397,11 +397,11 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/guest', async (req, res) => {
   try {
     const { deviceId } = req.body;
-    const guestId = deviceId ? \`guest_\${crypto.createHash('sha256').update(deviceId).digest('hex').slice(0, 16)}\` : \`guest_\${uuidv4().slice(0, 8)}\`;
+    const guestId = deviceId ? `guest_${crypto.createHash('sha256').update(deviceId).digest('hex').slice(0, 16)}` : `guest_${uuidv4().slice(0, 8)}`;
 
     let user = await User.findOne({ deviceId: guestId, isGuest: true });
     if (!user) {
-      user = new User({ username: \`Survivor\${Math.floor(Math.random() * 100000)}\`, isGuest: true, deviceId: guestId, referralCode: generateReferralCode() });
+      user = new User({ username: `Survivor${Math.floor(Math.random() * 100000)}`, isGuest: true, deviceId: guestId, referralCode: generateReferralCode() });
       await user.save();
       const gameSave = new GameSave({ userId: user._id });
       await gameSave.save();
@@ -625,7 +625,7 @@ app.post('/api/pvp/shield', authenticateToken, async (req, res) => {
     const cost = hours === 4 ? 50 : hours === 24 ? 200 : 50;
 
     const gameSave = await GameSave.findOne({ userId: req.userId });
-    if (!gameSave || gameSave.resources.gems < cost) return res.status(400).json({ error: \`Need \${cost} gems\` });
+    if (!gameSave || gameSave.resources.gems < cost) return res.status(400).json({ error: `Need ${cost} gems` });
 
     gameSave.resources.gems -= cost;
     await gameSave.save();
@@ -654,9 +654,9 @@ app.post('/api/alliance/create', authenticateToken, async (req, res) => {
     if (!tag || tag.length < 2 || tag.length > 5) return res.status(400).json({ error: 'Tag must be 2-5 characters' });
 
     const gameSave = await GameSave.findOne({ userId: req.userId });
-    if (!gameSave || gameSave.resources.gems < CONFIG.ALLIANCE_CREATE_COST) return res.status(400).json({ error: \`Need \${CONFIG.ALLIANCE_CREATE_COST} gems\` });
+    if (!gameSave || gameSave.resources.gems < CONFIG.ALLIANCE_CREATE_COST) return res.status(400).json({ error: `Need ${CONFIG.ALLIANCE_CREATE_COST} gems` });
 
-    const existing = await Alliance.findOne({ $or: [{ name: { $regex: new RegExp(\`^\${name}$\`, 'i') } }, { tag: tag.toUpperCase() }] });
+    const existing = await Alliance.findOne({ $or: [{ name: { $regex: new RegExp(`^${name}$`, 'i') } }, { tag: tag.toUpperCase() }] });
     if (existing) return res.status(409).json({ error: 'Alliance name or tag taken' });
 
     gameSave.resources.gems -= CONFIG.ALLIANCE_CREATE_COST;
@@ -687,7 +687,7 @@ app.post('/api/alliance/join/:allianceId', authenticateToken, async (req, res) =
     if (alliance.memberCount >= alliance.maxMembers) return res.status(400).json({ error: 'Alliance full' });
 
     const gameSave = await GameSave.findOne({ userId: req.userId });
-    if (gameSave && gameSave.player.level < alliance.minLevel) return res.status(400).json({ error: \`Min level \${alliance.minLevel} required\` });
+    if (gameSave && gameSave.player.level < alliance.minLevel) return res.status(400).json({ error: `Min level ${alliance.minLevel} required` });
 
     alliance.members.push({ userId: req.userId });
     alliance.memberCount += 1;
@@ -1102,13 +1102,13 @@ app.use((err, req, res, next) => { console.error('Unhandled error:', err); res.s
 const startServer = async () => {
   await connectDB();
   app.listen(CONFIG.PORT, () => {
-    console.log(\`
+    console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  ❄️  FROZEN FURY: SURVIVAL - Game Server v2.0  ❄️             ║
-║  Server: http://localhost:\${CONFIG.PORT}                          ║
-║  MongoDB: \${mongoose.connection.readyState === 1 ? 'Connected ✅' : 'Connecting...'}                           ║
+║  Server: http://localhost:${CONFIG.PORT}                          ║
+║  MongoDB: ${mongoose.connection.readyState === 1 ? 'Connected ✅' : 'Connecting...'}                           ║
 ║  Features: PvP, Alliances, Cloud Save, Leaderboards           ║
-╚════════════════════════════════════════════════════════════════╝\`);
+╚════════════════════════════════════════════════════════════════╝`);
   });
 };
 
